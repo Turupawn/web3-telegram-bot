@@ -10,8 +10,28 @@ const provider = new ethers.JsonRpcProvider(rpcUrl);
 const abi = ["function balanceOf(address owner) view returns (uint256)"];
 const contract = new ethers.Contract(tokenAddress, abi, provider);
 const CHAT_ID = process.env.CHAT_ID;
+const CHAIN_ID = process.env.CHAIN_ID;
 
 const pendingVerifications = new Map();
+
+function getAuthenticationSigner(userId, message, signature) {
+    const accessRequest = {
+        userId: userId,
+        message: message,
+    };
+    const domain = {
+    name: "Telegram Group Access",
+    version: "1",
+    chainId: CHAIN_ID,
+    };
+    const types = {
+    AccessRequest: [
+        { name: "userId", type: "uint256" },
+        { name: "message", type: "string" },
+    ]
+    };
+    return ethers.verifyTypedData(domain, types, accessRequest, signature);
+}
 
 (async () => {
     try {
@@ -25,6 +45,15 @@ bot.on("message", async (msg) => {
     const chatId = msg.chat.id;
     const text = msg.text || "";
     const ethAddressRegex = /^0x[a-fA-F0-9]{40}$/;
+
+    /*
+    console.log(getAuthenticationSigner(
+        "123",
+        "I'm requesting access to the telegram group.",
+        "0x62b6e046680a9ff9ea052c90d1019ecd8bef52df430558a33b759173e6e7d6e10cc6d453f6a431d6579957a038f5adfef225d3bf446a1c1c893fbd75221ccb031c")
+    )
+    */
+
     const match = ethAddressRegex.exec(text);
     if (match) {
         const ethAddress = match[0];
